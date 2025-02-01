@@ -1,14 +1,6 @@
 //
 
-import 'dart:async';
-
-//
-
-const unsendable = pragma('vm:isolate-unsendable');
-
-//
-
-typedef Task<R> = Future<R> Function();
+part of 'multithreading.dart';
 
 //
 

@@ -2,7 +2,7 @@
 
 import 'dart:async';
 
-import 'package:multithreading/wait_group.dart';
+import 'package:multithreading/multithreading.dart';
 
 //
 
