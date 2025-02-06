@@ -15,18 +15,6 @@ abstract interface class Queue<T> {
 
 //
 
-final class _Node<T> {
-  _Node({
-    required this.value,
-    this.next,
-  });
-
-  final T value;
-  _Node<T>? next;
-}
-
-//
-
 final class _Queue<T> implements Queue<T> {
   _Queue();
 
@@ -38,6 +26,18 @@ final class _Queue<T> implements Queue<T> {
 
   @override
   T? dequeue() => _dequeue();
+}
+
+//
+
+final class _Node<T> {
+  _Node({
+    required this.value,
+    this.next,
+  });
+
+  final T value;
+  _Node<T>? next;
 }
 
 //

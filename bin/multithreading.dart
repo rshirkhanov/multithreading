@@ -2,13 +2,15 @@
 
 import 'dart:async';
 
+//
+
 import 'package:multithreading/multithreading.dart';
 
 //
 
 void main() async {
   print('begin');
-  await test0();
+  await test13(5);
   print('end');
 }
 
@@ -151,45 +153,42 @@ Future<void> test10() async {
 
 //
 
-Future<void> test11(int step) async {
+Future<void> test11(int chunk) async {
   final wg = WaitGroup();
 
   for (final (index, task) in tasks.indexed) {
     wg.launch(task);
 
-    if ((index + 1) % step == 0) {
+    if ((index + 1) % chunk == 0) {
       await wg.wait();
     }
   }
 
-  // if (wg.isNotEmpty) {
-  //   await wg.wait();
-  // }
+  if (wg.isNotEmpty) {
+    await wg.wait();
+  }
 }
 
 //
 
-Future<void> test12(int step) => WaitGroup.scoped((launch, wait) async* {
-      for (final (index, task) in tasks.indexed) {
-        launch(task);
-
-        if ((index + 1) % step == 0) {
-          yield wait;
-        }
-      }
+Future<void> test12() => WaitGroup.scoped((launch) async* {
+      /// impossible to call "add"
+      /// impossible to call "done"
+      ///
+      /// impossible to call "wait"
+      /// impossible to mark "unawaited"
     });
 
 //
 
-Future<void> test13() => WaitGroup.scoped((launch, wait) async* {
-      /// impossible to call "add"
-      /// impossible to call "done"
-      ///
-      ///   possible to call "wait" but
-      /// impossible to mark "unawaited"
-      ///
-      /// failed assertion
-      yield wait;
+Future<void> test13(int chunk) => WaitGroup.scoped((launch) async* {
+      for (final (index, task) in tasks.indexed) {
+        final token = launch(task);
+
+        if ((index + 1) % chunk == 0) {
+          yield token;
+        }
+      }
     });
 
 //

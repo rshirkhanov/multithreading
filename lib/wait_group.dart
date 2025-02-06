@@ -4,26 +4,11 @@ part of 'multithreading.dart';
 
 //
 
-typedef WaitGroupLaunch = void Function(Task<void>);
-
-//
-
-enum WaitGroupSignal { _ }
-
-//
-
-typedef WaitGroupScope = Stream<WaitGroupSignal> Function(
-  WaitGroupLaunch launch,
-  WaitGroupSignal signal,
-);
-
-//
-
 @unsendable
 final class WaitGroup {
   WaitGroup();
 
-  static const scoped = WaitGroupPublicAPI._scoped;
+  static const scoped = _WaitGroupSafeAPI.scoped;
 
   var _pending = 0;
   Completer<void>? _completer;
@@ -33,7 +18,6 @@ final class WaitGroup {
 
 extension WaitGroupPublicAPI on WaitGroup {
   bool get isEmpty => !isNotEmpty;
-
   bool get isNotEmpty => _pending > 0 && _completer != null;
 
   //
@@ -81,29 +65,61 @@ extension WaitGroupPublicAPI on WaitGroup {
   //
 
   // ignore: avoid_void_async
-  void launch(Future<void> Function() operation) async {
+  void launch(Task<void> task) async {
     try {
       add();
-      await operation();
+      await task.run();
     } catch (_) {
       rethrow;
     } finally {
       done();
     }
   }
+}
 
-  //
+//
 
-  static Future<void> _scoped(WaitGroupScope scope) async {
-    final wg = WaitGroup();
-    final signals = scope(wg.launch, WaitGroupSignal._);
+@unsendable
+final class WaitGroupToken {
+  const WaitGroupToken._(this.value);
+  final int value;
+}
 
-    await for (final _ in signals) {
-      await wg.wait();
+//
+
+typedef WaitGroupLaunch = WaitGroupToken Function(Task<void>);
+
+//
+
+typedef WaitGroupScope = Stream<WaitGroupToken> Function(
+  WaitGroupLaunch launch,
+);
+
+//
+
+extension _WaitGroupSafeAPI on WaitGroup {
+  static const _tokenIsOld = '"token" must be fresh';
+  static const _tokenUsedTwice = '"token" must be used only once';
+
+  static Future<void> scoped(WaitGroupScope scope) async {
+    final waitGroup = WaitGroup();
+
+    var counter = -1;
+    final tokens = scope((Task<void> task) {
+      final _ = waitGroup.launch(task);
+      return WaitGroupToken._(++counter);
+    });
+
+    WaitGroupToken? lastToken;
+    await for (final token in tokens) {
+      assert(token.value == counter, _tokenIsOld);
+      assert(token != lastToken, _tokenUsedTwice);
+      await waitGroup.wait();
+      lastToken = token;
     }
 
-    if (wg.isNotEmpty) {
-      await wg.wait();
+    if (waitGroup.isNotEmpty) {
+      await waitGroup.wait();
     }
   }
 }

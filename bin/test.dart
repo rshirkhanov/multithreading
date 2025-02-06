@@ -1,4 +1,4 @@
-//
+// ignore_for_file: avoid_print
 
 import 'package:multithreading/multithreading.dart';
 
@@ -16,7 +16,7 @@ Iterable<T> sequence<T>(
   int count,
   T Function(int index) expression,
 ) sync* {
-  assert(count > 0);
+  assert(count > 0, '"count" must be greater than zero');
   for (var i = 0; i < count; i++) {
     yield expression(i);
   }
@@ -32,7 +32,7 @@ Task<int> createTask(int i) => () => Future.delayed(
 //
 
 extension IterableMapIndexedX<A> on Iterable<A> {
-  Iterable<B> mapIndexed<B>(B Function(int, A) transform) sync* {
+  Iterable<B> mapIndexed<B>(B Function(int index, A value) transform) sync* {
     var index = -1;
     for (final value in this) {
       yield transform(++index, value);
@@ -43,6 +43,7 @@ extension IterableMapIndexedX<A> on Iterable<A> {
 //
 
 extension HomoPairChooseX<T> on (T, T) {
+  // ignore: avoid_positional_boolean_parameters
   T choose(bool condition) => condition ? $1 : $2;
 }
 

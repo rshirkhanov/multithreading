@@ -9,6 +9,7 @@ abstract interface class Worker {
   const Worker._();
 
   static const spawn = _spawn;
+  static const scoped = _WorkerSafeAPI.scoped;
 
   Future<T> perform<T>(Task<T> task);
   Future<void> die();
@@ -16,9 +17,9 @@ abstract interface class Worker {
 
 //
 
-typedef _Input<T> = ({_Id id, Task<T> task});
+typedef _Input<T> = ({Id id, Task<T> task});
 
-typedef _Output<T> = ({_Id id, Result<T, Object> result});
+typedef _Output<T> = ({Id id, Result<T, Object> result});
 
 //
 
@@ -32,20 +33,17 @@ final class _IsolateWorker implements Worker {
     this._sendPort,
     this._pending,
   ) {
-    _subscription = _received
-        .where((it) => it is _Output)
-        .cast<_Output>()
-        .listen(_onReceived);
+    _subscription = _received.whereType<_Output<Any>>().listen(_onReceived);
   }
 
   final ReceivePort _receivePort;
-  final Stream _received;
+  final Stream<Any> _received;
   final ReceivePort _exitPort;
   final Isolate _isolate;
   final SendPort _sendPort;
-  final HashMap<_Id, Completer> _pending;
+  final HashMap<Id, Completer<Any>> _pending;
 
-  late final StreamSubscription<_Output> _subscription;
+  late final StreamSubscription<_Output<Any>> _subscription;
 
   @override
   Future<T> perform<T>(Task<T> task) => _perform(task);
@@ -70,10 +68,10 @@ extension _ThreadPrivateAPI on _IsolateWorker {
 
   @alwaysInline
   Future<T> _perform<T>(Task<T> task) {
-    final id = _Id();
+    final id = Id();
     final completer = Completer<T>();
     _pending[id] = completer;
-    final _Input input = (id: id, task: task);
+    final input = (id: id, task: task);
     final _ = _sendPort.send(input);
     return completer.future;
   }
@@ -99,7 +97,7 @@ extension _ThreadPrivateAPI on _IsolateWorker {
 //
 
 @neverInline
-Future<_IsolateWorker> _spawn({
+Future<Worker> _spawn({
   String? debugName,
 }) async {
   final receivePort = ReceivePort();
@@ -115,7 +113,7 @@ Future<_IsolateWorker> _spawn({
   );
   final sendPort = (await received.first) as SendPort;
 
-  final pending = HashMap<_Id, Completer>();
+  final pending = HashMap<Id, Completer<Any>>();
 
   return _IsolateWorker._(
     receivePort,
@@ -135,15 +133,10 @@ Future<void> _entryPoint(SendPort sendPort) async {
   final _ = sendPort.send(receivePort.sendPort);
 
   await for (final value in receivePort) {
-    // TODO: TEST
-    if (value case final _Input input) {
-      // final result = await Result.fromAsync(input.task.run);
-      // final _Output output = (id: input.id, result: result);
-      // final _ = sendPort.send(output);
-
-      final _ = Result.fromAsync(input.task.run)
-          .then((result) => (id: input.id, result: result))
-          .then(sendPort.send);
+    if (value case final _Input<Any> input) {
+      final result = await Result.fromTask(input.task.run);
+      final output = (id: input.id, result: result);
+      final _ = sendPort.send(output);
     } else {
       final _ = receivePort.close();
       Isolate.exit();
@@ -153,29 +146,32 @@ Future<void> _entryPoint(SendPort sendPort) async {
 
 //
 
-Future<void> loop<T>(
-  int buffer,
-  Stream<Task<T>> tasks,
-  void Function<R>(R result) send,
-) async {
-  assert(buffer > 0);
+typedef WorkerPerform = Future<T> Function<T>(Task<T> task);
 
-  final wg = WaitGroup();
+//
 
-  var counter = 0;
-  await for (final task in tasks) {
-    counter += 1;
+typedef WorkerScope<R> = Future<R> Function(WorkerPerform perform);
 
-    wg.launch(task);
+//
 
-    if (counter == buffer) {
-      counter = 0;
-      await wg.wait();
+extension _WorkerSafeAPI on Worker {
+  static Future<R> scoped<R>(
+    WorkerScope<R> scope, {
+    String? debugName,
+  }) async {
+    try {
+      final worker = await Worker.spawn(debugName: debugName);
+
+      try {
+        return await scope(worker.perform);
+      } catch (_) {
+        rethrow;
+      } finally {
+        await worker.die();
+      }
+    } catch (_) {
+      rethrow;
     }
-  }
-
-  if (counter != 0) {
-    await wg.wait();
   }
 }
 

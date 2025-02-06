@@ -8,9 +8,11 @@ import 'dart:isolate';
 
 part 'id.dart';
 part 'meta.dart';
+part 'pool.dart';
 part 'queue.dart';
 part 'result.dart';
 part 'task.dart';
+part 'utils.dart';
 part 'wait_group.dart';
 part 'worker.dart';
 

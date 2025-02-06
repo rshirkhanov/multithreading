@@ -14,16 +14,14 @@ sealed class Result<S, F> {
     StackTrace? stackTrace,
   ]) = Failure;
 
-  static const fromAsync = _fromAsync;
+  static const fromTask = _fromTask;
 }
 
 //
 
-Future<Result<S, Object>> _fromAsync<S>(
-  Future<S> Function() expression,
-) async {
+Future<Result<S, Object>> _fromTask<S>(Task<S> task) async {
   try {
-    final value = await expression();
+    final value = await task.run();
     return Result.success(value);
   } catch (e, st) {
     return Result.failure(e, st);
