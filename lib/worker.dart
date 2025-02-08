@@ -41,7 +41,7 @@ final class _IsolateWorker implements Worker {
   final ReceivePort _exitPort;
   final Isolate _isolate;
   final SendPort _sendPort;
-  final HashMap<Id, Completer<Any>> _pending;
+  final Map<Id, Completer<Any>> _pending;
 
   late final StreamSubscription<_Output<Any>> _subscription;
 
@@ -98,6 +98,7 @@ extension _ThreadPrivateAPI on _IsolateWorker {
 
 @neverInline
 Future<Worker> _spawn({
+  Capacity capacity = const Capacity.unlimited(),
   String? debugName,
 }) async {
   final receivePort = ReceivePort();
@@ -132,6 +133,8 @@ Future<void> _entryPoint(SendPort sendPort) async {
   final receivePort = ReceivePort();
   final _ = sendPort.send(receivePort.sendPort);
 
+  // TODO(rshirkhanov): use capacity
+
   await for (final value in receivePort) {
     if (value case final _Input<Any> input) {
       final result = await Result.fromTask(input.task.run);
@@ -155,15 +158,29 @@ typedef WorkerScope<R> = Future<R> Function(WorkerPerform perform);
 //
 
 extension _WorkerSafeAPI on Worker {
+  static const _methodUsedOutsideOfScope =
+      'do not use methods outside of "scope"';
+
   static Future<R> scoped<R>(
     WorkerScope<R> scope, {
+    Capacity capacity = const Capacity.unlimited(),
     String? debugName,
   }) async {
     try {
-      final worker = await Worker.spawn(debugName: debugName);
+      final worker = await Worker.spawn(
+        capacity: capacity,
+        debugName: debugName,
+      );
 
       try {
-        return await scope(worker.perform);
+        final reference = WeakReference(worker);
+
+        Future<T> perform<T>(Task<T> task) {
+          assert(reference.target != null, _methodUsedOutsideOfScope);
+          return reference.target!.perform(task);
+        }
+
+        return await scope(perform);
       } catch (_) {
         rethrow;
       } finally {

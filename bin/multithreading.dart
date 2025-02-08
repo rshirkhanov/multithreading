@@ -175,7 +175,7 @@ Future<void> test12() => WaitGroup.scoped((launch) async* {
       /// impossible to call "add"
       /// impossible to call "done"
       ///
-      /// impossible to call "wait"
+      ///   possible to call "wait"
       /// impossible to mark "unawaited"
     });
 

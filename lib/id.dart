@@ -13,6 +13,7 @@ final class Id {
 
   @override
   int get hashCode => _value.hashCode;
+
   @override
   bool operator ==(Object? other) => other is Id && other.hashCode == hashCode;
 }

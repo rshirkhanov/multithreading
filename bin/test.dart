@@ -4,11 +4,7 @@ import 'package:multithreading/multithreading.dart';
 
 //
 
-typedef Lazy<R> = R Function();
-
-//
-
-(R, R) duplicate<R>(Lazy<R> expression) => (expression(), expression());
+(R, R) duplicate<R>(R Function() expression) => (expression(), expression());
 
 //
 
@@ -31,8 +27,10 @@ Task<int> createTask(int i) => () => Future.delayed(
 
 //
 
-extension IterableMapIndexedX<A> on Iterable<A> {
-  Iterable<B> mapIndexed<B>(B Function(int index, A value) transform) sync* {
+extension<A> on Iterable<A> {
+  Iterable<B> mapIndexed<B>(
+    B Function(int index, A value) transform,
+  ) sync* {
     var index = -1;
     for (final value in this) {
       yield transform(++index, value);
@@ -42,20 +40,20 @@ extension IterableMapIndexedX<A> on Iterable<A> {
 
 //
 
-extension HomoPairChooseX<T> on (T, T) {
+extension<T> on (T, T) {
   // ignore: avoid_positional_boolean_parameters
-  T choose(bool condition) => condition ? $1 : $2;
+  T select(bool condition) => condition ? $1 : $2;
 }
 
 //
 
-extension HomoPairMapX<A> on (A, A) {
+extension<A> on (A, A) {
   (B, B) map<B>(B Function(A) transform) => (transform($1), transform($2));
 }
 
 //
 
-extension IterableNumSumX<T extends num> on Iterable<T> {
+extension<T extends num> on Iterable<T> {
   T get sum => reduce((s, x) => (s + x) as T);
 }
 
@@ -68,7 +66,7 @@ Future<void> main() async {
 
   try {
     final results = await sequence(10, createTask)
-        .mapIndexed((index, task) => workers.choose(index.isEven).perform(task))
+        .mapIndexed((index, task) => workers.select(index.isEven).perform(task))
         .wait;
 
     print(results.sum);
