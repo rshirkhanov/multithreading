@@ -17,11 +17,11 @@ final class Succ<Prev extends Nat> implements Nat {
 
 typedef Eq<A extends Nat, B extends Nat> = (LTE<A, B>, LTE<B, A>);
 
+typedef GT<A extends Nat, B extends Nat> = LT<B, A>;
+
 typedef GTE<A extends Nat, B extends Nat> = LTE<B, A>;
 
 typedef LT<A extends Nat, B extends Nat> = LTE<Succ<A>, B>;
-
-typedef GT<A extends Nat, B extends Nat> = LT<B, A>;
 
 //
 
