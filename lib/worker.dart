@@ -158,36 +158,22 @@ typedef WorkerScope<R> = Future<R> Function(WorkerPerform perform);
 //
 
 extension _WorkerSafeAPI on Worker {
-  static const _methodUsedOutsideOfScope =
-      'do not use methods outside of "scope"';
-
   static Future<R> scoped<R>(
     WorkerScope<R> scope, {
     Capacity capacity = const Capacity.unlimited(),
     String? debugName,
   }) async {
+    final worker = await Worker.spawn(
+      capacity: capacity,
+      debugName: debugName,
+    );
+
     try {
-      final worker = await Worker.spawn(
-        capacity: capacity,
-        debugName: debugName,
-      );
-
-      try {
-        final reference = WeakReference(worker);
-
-        Future<T> perform<T>(Task<T> task) {
-          assert(reference.target != null, _methodUsedOutsideOfScope);
-          return reference.target!.perform(task);
-        }
-
-        return await scope(perform);
-      } catch (_) {
-        rethrow;
-      } finally {
-        await worker.die();
-      }
+      return await scope(worker.perform);
     } catch (_) {
       rethrow;
+    } finally {
+      await worker.die();
     }
   }
 }
