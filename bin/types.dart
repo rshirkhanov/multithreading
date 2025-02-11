@@ -29,17 +29,13 @@ sealed class LTE<X extends Nat, Y extends Nat> {
   const LTE();
 }
 
-final class LTEZeroAndZero implements LTE<Zero, Zero> {
-  const LTEZeroAndZero();
+final class LTEZero implements LTE<Zero, Nat> {
+  const LTEZero();
 }
 
-final class LTEZeroAndSucc<K extends Nat> implements LTE<Zero, Succ<K>> {
-  const LTEZeroAndSucc();
-}
-
-final class LTESuccAndSucc<A extends Nat, B extends Nat>
+final class LTESucc<A extends Nat, B extends Nat>
     implements LTE<Succ<A>, Succ<B>> {
-  const LTESuccAndSucc(this.prev);
+  const LTESucc(this.prev);
   final LTE<A, B> prev;
 }
 
