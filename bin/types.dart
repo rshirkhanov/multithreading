@@ -29,7 +29,7 @@ sealed class LTE<X extends Nat, Y extends Nat> {
   const LTE();
 }
 
-final class LTEZero implements LTE<Zero, Nat> {
+final class LTEZero<K extends Nat> implements LTE<Zero, K> {
   const LTEZero();
 }
 
