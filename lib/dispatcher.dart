@@ -16,10 +16,7 @@ abstract interface class Dispatcher {
 
 // TODO(rshirkhanov): implement
 final class _Dispatcher implements Dispatcher {
-  _Dispatcher(this._workers, this._tasks);
-
-  final Set<Worker> _workers;
-  final Queue<Task<Any>> _tasks;
+  _Dispatcher();
 
   @override
   Future<T> dispatch<T>(Task<T> task) => _dispatch(task);
@@ -40,6 +37,7 @@ extension on _Dispatcher {
 //
 
 // TODO(rshirkhanov): implement spawn(config) method
+
 // TODO(rshirkhanov): check that config.workerCount <= availableWorkersCount
 
 //

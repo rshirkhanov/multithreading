@@ -106,9 +106,11 @@ Future<Worker> _spawn({
 
   final exitPort = ReceivePort();
 
-  final isolate = await Isolate.spawn(
+  final initialMessage = (receivePort.sendPort, capacity);
+
+  final isolate = await Isolate.spawn<_InitialMessage>(
     _entryPoint,
-    receivePort.sendPort,
+    initialMessage,
     debugName: debugName,
     onExit: exitPort.sendPort,
   );
@@ -128,23 +130,44 @@ Future<Worker> _spawn({
 
 //
 
+typedef _InitialMessage = (SendPort, Capacity);
+
+//
+
 @neverInline
-Future<void> _entryPoint(SendPort sendPort) async {
+Future<void> _entryPoint(_InitialMessage initialMessage) async {
+  final (sendPort, capacity) = initialMessage;
+
   final receivePort = ReceivePort();
   final _ = sendPort.send(receivePort.sendPort);
 
-  // TODO(rshirkhanov): use capacity
+  final wg = WaitGroup();
 
-  await for (final value in receivePort) {
+  await for (final (index, value) in receivePort.enumerated) {
     if (value case final _Input<Any> input) {
-      final result = await Result.fromTask(input.task.run);
-      final output = (id: input.id, result: result);
-      final _ = sendPort.send(output);
+      wg.add();
+      unawaited(_handle(input).then(sendPort.send).whenComplete(wg.done));
+
+      if ((index + 1) % capacity.value == 0) {
+        await wg.wait();
+      }
     } else {
+      if (wg.isNotEmpty) {
+        await wg.wait();
+      }
+
       final _ = receivePort.close();
       Isolate.exit();
     }
   }
+}
+
+//
+
+@neverInline
+Future<_Output<T>> _handle<T>(_Input<T> input) async {
+  final result = await Result.fromTask(input.task.run);
+  return (id: input.id, result: result);
 }
 
 //

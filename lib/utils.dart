@@ -32,3 +32,14 @@ extension StreamWhereTypeX<A> on Stream<A> {
 }
 
 //
+
+extension StreamEnumeratedX<A> on Stream<A> {
+  Stream<(int, A)> get enumerated async* {
+    var index = -1;
+    await for (final value in this) {
+      yield (++index, value);
+    }
+  }
+}
+
+//
