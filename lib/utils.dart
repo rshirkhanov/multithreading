@@ -22,6 +22,9 @@ T? tryCast<U, T>(U value) => value is T ? value : null;
 extension AnyLetX<T> on T {
   @preferInline
   R let<R>(R Function(T) expression) => expression(this);
+
+  @preferInline
+  T also(void Function(T) callback) => this..let(callback);
 }
 
 //

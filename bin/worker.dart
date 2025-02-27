@@ -60,9 +60,11 @@ extension<T extends num> on Iterable<T> {
 //
 
 Future<void> main() async {
-  final workers = await duplicate(Worker.spawn).wait;
-
   print('BEGIN');
+
+  final workers =
+      await duplicate(() => Worker.spawn(capacity: const Capacity.exact(1)))
+          .wait;
 
   try {
     final results = await sequence(10, createTask)
@@ -70,8 +72,8 @@ Future<void> main() async {
         .wait;
 
     print(results.sum);
-  } catch (exception, stackTrace) {
-    print((exception, stackTrace));
+  } catch (_, __) {
+    rethrow;
   } finally {
     await workers.map((it) => it.die()).wait;
   }

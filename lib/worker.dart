@@ -54,7 +54,7 @@ final class _IsolateWorker implements Worker {
 
 //
 
-extension _ThreadPrivateAPI on _IsolateWorker {
+extension _WorkerPrivateAPI on _IsolateWorker {
   @neverInline
   void _onReceived<T>(_Output<T> output) {
     final completer = _pending.remove(output.id);

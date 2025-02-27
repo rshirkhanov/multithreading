@@ -6,7 +6,10 @@ part of 'multithreading.dart';
 
 @unsendable
 abstract interface class Dispatcher {
-  const Dispatcher();
+  const Dispatcher._();
+
+  // static const spawn = _spawn;
+  // static const scoped = _DispatcherSafeAPI.scoped;
 
   Future<T> dispatch<T>(Task<T> task);
   Future<void> die();
