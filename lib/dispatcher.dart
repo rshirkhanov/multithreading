@@ -8,8 +8,8 @@ part of 'multithreading.dart';
 abstract interface class Dispatcher {
   const Dispatcher._();
 
-  // static const spawn = _spawn;
-  // static const scoped = _DispatcherSafeAPI.scoped;
+  static const spawn = _DispatcherUnsafeAPI.spawn;
+  static const scoped = _DispatcherSafeAPI.scoped;
 
   Future<T> dispatch<T>(Task<T> task);
   Future<void> die();
@@ -31,16 +31,49 @@ final class _Dispatcher implements Dispatcher {
 //
 
 // TODO(rshirkhanov): implement
-extension on _Dispatcher {
+extension _DispatcherPrivateAPI on _Dispatcher {
+  @alwaysInline
   Future<T> _dispatch<T>(Task<T> task) => throw UnimplementedError();
 
+  @alwaysInline
   Future<void> _die() => throw UnimplementedError();
 }
 
 //
 
-// TODO(rshirkhanov): implement spawn(config) method
+// TODO(rshirkhanov): implement
+extension _DispatcherUnsafeAPI on Dispatcher {
+  static const maxWorkerCountGTAvailableWorkersCount =
+      '"maxWorkerCount" must be less than or equal to "_availableWorkersCount"';
 
-// TODO(rshirkhanov): check that config.workerCount <= availableWorkersCount
+  static Future<Dispatcher> spawn({
+    required DispatcherRules rules,
+  }) {
+    assert(
+      rules.initialization.maxWorkerCount <= _availableWorkersCount,
+      maxWorkerCountGTAvailableWorkersCount,
+    );
+    throw UnimplementedError();
+  }
+}
+
+//
+
+typedef DispatcherDispatch = Future<T> Function<T>(Task<T> task);
+
+//
+
+typedef DispatcherScope<R> = Future<R> Function(DispatcherDispatch dispatch);
+
+//
+
+// TODO(rshirkhanov): implement
+extension _DispatcherSafeAPI on Dispatcher {
+  static Future<R> scoped<R>(
+    DispatcherScope<R> scope, {
+    required DispatcherRules rules,
+  }) =>
+      throw UnimplementedError();
+}
 
 //

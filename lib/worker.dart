@@ -8,7 +8,7 @@ part of 'multithreading.dart';
 abstract interface class Worker {
   const Worker._();
 
-  static const spawn = _spawn;
+  static const spawn = _WorkerUnsafeAPI.spawn;
   static const scoped = _WorkerSafeAPI.scoped;
 
   Future<T> perform<T>(Task<T> task);
@@ -24,8 +24,8 @@ typedef _Output<T> = ({Id id, Result<T, Object> result});
 //
 
 @unsendable
-final class _IsolateWorker implements Worker {
-  _IsolateWorker._(
+final class _Worker implements Worker {
+  _Worker._(
     this._receivePort,
     this._received,
     this._exitPort,
@@ -54,7 +54,7 @@ final class _IsolateWorker implements Worker {
 
 //
 
-extension _WorkerPrivateAPI on _IsolateWorker {
+extension _WorkerPrivateAPI on _Worker {
   @neverInline
   void _onReceived<T>(_Output<T> output) {
     final completer = _pending.remove(output.id);
@@ -96,78 +96,79 @@ extension _WorkerPrivateAPI on _IsolateWorker {
 
 //
 
-@neverInline
-Future<Worker> _spawn({
-  Capacity capacity = const Capacity.unlimited(),
-  String? debugName,
-}) async {
-  final receivePort = ReceivePort();
-  final received = receivePort.asBroadcastStream();
-
-  final exitPort = ReceivePort();
-
-  final initialMessage = (receivePort.sendPort, capacity);
-
-  final isolate = await Isolate.spawn<_InitialMessage>(
-    _entryPoint,
-    initialMessage,
-    debugName: debugName,
-    onExit: exitPort.sendPort,
-  );
-  final sendPort = (await received.first) as SendPort;
-
-  final pending = HashMap<Id, Completer<Any>>();
-
-  return _IsolateWorker._(
-    receivePort,
-    received,
-    exitPort,
-    isolate,
-    sendPort,
-    pending,
-  );
-}
-
-//
-
 typedef _InitialMessage = (SendPort, Capacity);
 
 //
 
-@neverInline
-Future<void> _entryPoint(_InitialMessage initialMessage) async {
-  final (sendPort, capacity) = initialMessage;
+extension _WorkerUnsafeAPI on Worker {
+  @neverInline
+  static Future<Worker> spawn({
+    WorkerRules rules = const WorkerRules(),
+  }) async {
+    final receivePort = ReceivePort();
+    final received = receivePort.asBroadcastStream();
 
-  final receivePort = ReceivePort();
-  final _ = sendPort.send(receivePort.sendPort);
+    final exitPort = ReceivePort();
 
-  final wg = WaitGroup();
+    final initialMessage = (receivePort.sendPort, rules.capacity);
 
-  await for (final (index, value) in receivePort.enumerated) {
-    if (value case final _Input<Any> input) {
-      wg.add();
-      unawaited(_handle(input).then(sendPort.send).whenComplete(wg.done));
+    final isolate = await Isolate.spawn<_InitialMessage>(
+      _entryPoint,
+      initialMessage,
+      debugName: rules.debugName,
+      onExit: exitPort.sendPort,
+    );
+    final sendPort = (await received.first) as SendPort;
 
-      if ((index + 1) % capacity.value == 0) {
-        await wg.wait();
+    final pending = HashMap<Id, Completer<Any>>();
+
+    return _Worker._(
+      receivePort,
+      received,
+      exitPort,
+      isolate,
+      sendPort,
+      pending,
+    );
+  }
+
+  //
+
+  @neverInline
+  static Future<void> _entryPoint(_InitialMessage initialMessage) async {
+    final (sendPort, capacity) = initialMessage;
+
+    final receivePort = ReceivePort();
+    final _ = sendPort.send(receivePort.sendPort);
+
+    final wg = WaitGroup();
+
+    await for (final (index, value) in receivePort.enumerated) {
+      if (value case final _Input<Any> input) {
+        wg.add();
+        unawaited(_handle(input).then(sendPort.send).whenComplete(wg.done));
+
+        if ((index + 1) % capacity.value == 0) {
+          await wg.wait();
+        }
+      } else {
+        if (wg.isNotEmpty) {
+          await wg.wait();
+        }
+
+        final _ = receivePort.close();
+        Isolate.exit();
       }
-    } else {
-      if (wg.isNotEmpty) {
-        await wg.wait();
-      }
-
-      final _ = receivePort.close();
-      Isolate.exit();
     }
   }
-}
 
-//
+  //
 
-@neverInline
-Future<_Output<T>> _handle<T>(_Input<T> input) async {
-  final result = await Result.fromTask(input.task.run);
-  return (id: input.id, result: result);
+  @neverInline
+  static Future<_Output<T>> _handle<T>(_Input<T> input) async {
+    final result = await Result.fromTask(input.task.run);
+    return (id: input.id, result: result);
+  }
 }
 
 //
@@ -183,13 +184,9 @@ typedef WorkerScope<R> = Future<R> Function(WorkerPerform perform);
 extension _WorkerSafeAPI on Worker {
   static Future<R> scoped<R>(
     WorkerScope<R> scope, {
-    Capacity capacity = const Capacity.unlimited(),
-    String? debugName,
+    WorkerRules rules = const WorkerRules(),
   }) async {
-    final worker = await Worker.spawn(
-      capacity: capacity,
-      debugName: debugName,
-    );
+    final worker = await Worker.spawn(rules: rules);
 
     try {
       return await scope(worker.perform);

@@ -9,7 +9,7 @@ final _availableWorkersCount = Platform.numberOfProcessors - 1;
 //
 
 sealed class Initialization {
-  const Initialization();
+  const Initialization._();
 }
 
 //
@@ -47,27 +47,50 @@ final class Lazy implements Initialization {
 
 //
 
-final class Capacity {
-  const Capacity.unlimited() : value = double.infinity;
+extension _InitializationMaxWorkerCountX on Initialization {
+  int get maxWorkerCount => switch (this) {
+        final Eager self => self.workerCount,
+        final Lazy self => self.workerCount.max,
+      };
+}
 
+//
+
+final class Capacity {
   const Capacity.exact(int this.value)
       : assert(
           1 <= value,
           '"value" must be greater than or equal to 1',
         );
 
+  const Capacity._unlimited() : value = double.infinity;
+
+  static const unlimited = Capacity._unlimited();
+
   final num value;
 }
 
 //
 
-final class Config {
-  const Config({
+final class DispatcherRules {
+  const DispatcherRules({
     required this.initialization,
-    required this.debugName,
+    this.debugName,
   });
 
   final Initialization initialization;
+  final String? debugName;
+}
+
+//
+
+final class WorkerRules {
+  const WorkerRules({
+    this.capacity = Capacity.unlimited,
+    this.debugName,
+  });
+
+  final Capacity capacity;
   final String? debugName;
 }
 

@@ -12,7 +12,10 @@ typedef Any = Object?;
 T the<T>(T value) => value;
 
 @preferInline
-T cast<U, T>(U value) => value as T;
+T safeCast<U, T extends U>(T value) => value;
+
+@preferInline
+T unsafeCast<U, T>(U value) => value as T;
 
 @preferInline
 T? tryCast<U, T>(U value) => value is T ? value : null;
