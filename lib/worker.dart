@@ -25,7 +25,7 @@ typedef _Output<T> = ({Id id, Result<T, Object> result});
 
 @unsendable
 final class _Worker implements Worker {
-  _Worker._(
+  _Worker(
     this._receivePort,
     this._received,
     this._exitPort,
@@ -124,7 +124,7 @@ extension _WorkerUnsafeAPI on Worker {
 
     final pending = HashMap<Id, Completer<Any>>();
 
-    return _Worker._(
+    return _Worker(
       receivePort,
       received,
       exitPort,
