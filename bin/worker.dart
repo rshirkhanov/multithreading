@@ -63,11 +63,13 @@ Future<void> main() async {
   print('BEGIN');
 
   const defaultRules = (capacity: Capacity.unlimited, debugName: null);
-  final workers = await duplicate(() => Worker.spawn(rules: defaultRules)).wait;
+  final workers = await duplicate(() => Worker.spawn(defaultRules)).wait;
 
   try {
     final results = await sequence(10, createTask)
-        .mapIndexed((index, task) => workers.select(index.isEven).perform(task))
+        .mapIndexed(
+          (index, task) => workers.select(index.isEven).self.perform(task),
+        )
         .wait;
 
     print(results.sum);

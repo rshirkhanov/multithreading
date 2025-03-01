@@ -9,7 +9,6 @@ abstract interface class Dispatcher {
   const Dispatcher._();
 
   static const spawn = _DispatcherUnsafeAPI.spawn;
-  static const scoped = _DispatcherSafeAPI.scoped;
 
   Future<T> dispatch<T>(Task<T> task);
   Future<void> die();
@@ -55,25 +54,6 @@ extension _DispatcherUnsafeAPI on Dispatcher {
     );
     throw UnimplementedError();
   }
-}
-
-//
-
-typedef DispatcherDispatch = Future<T> Function<T>(Task<T> task);
-
-//
-
-typedef DispatcherScope<R> = Future<R> Function(DispatcherDispatch dispatch);
-
-//
-
-// TODO(rshirkhanov): implement
-extension _DispatcherSafeAPI on Dispatcher {
-  static Future<R> scoped<R>(
-    DispatcherScope<R> scope, {
-    required DispatcherRules rules,
-  }) =>
-      throw UnimplementedError();
 }
 
 //

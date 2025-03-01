@@ -9,10 +9,8 @@ abstract interface class Worker {
   const Worker._();
 
   static const spawn = _WorkerUnsafeAPI.spawn;
-  static const scoped = _WorkerSafeAPI.scoped;
 
   Future<T> perform<T>(Task<T> task);
-  Future<void> die();
 }
 
 //
@@ -24,7 +22,7 @@ typedef _Output<T> = ({Id id, Result<T, Object> result});
 //
 
 @unsendable
-final class _Worker implements Worker {
+final class _Worker implements Worker, Mortal<Worker> {
   _Worker(
     this._receivePort,
     this._received,
@@ -47,6 +45,9 @@ final class _Worker implements Worker {
 
   @override
   Future<T> perform<T>(Task<T> task) => _perform(task);
+
+  @override
+  Worker get self => this;
 
   @override
   Future<void> die() => _die();
@@ -102,9 +103,7 @@ typedef _InitialMessage = (SendPort, Capacity);
 
 extension _WorkerUnsafeAPI on Worker {
   @neverInline
-  static Future<Worker> spawn({
-    required WorkerRules rules,
-  }) async {
+  static Future<Mortal<Worker>> spawn(WorkerRules rules) async {
     // TODO(rshirkhanov): assert availableWorkersCount
 
     final receivePort = ReceivePort();
@@ -170,33 +169,6 @@ extension _WorkerUnsafeAPI on Worker {
   static Future<_Output<T>> _handle<T>(_Input<T> input) async {
     final result = await Result.fromTask(input.task.run);
     return (id: input.id, result: result);
-  }
-}
-
-//
-
-typedef WorkerPerform = Future<T> Function<T>(Task<T> task);
-
-//
-
-typedef WorkerScope<R> = Future<R> Function(WorkerPerform perform);
-
-//
-
-extension _WorkerSafeAPI on Worker {
-  static Future<R> scoped<R>(
-    WorkerScope<R> scope, {
-    required WorkerRules rules,
-  }) async {
-    final worker = await Worker.spawn(rules: rules);
-
-    try {
-      return await scope(worker.perform);
-    } catch (_) {
-      rethrow;
-    } finally {
-      await worker.die();
-    }
   }
 }
 
