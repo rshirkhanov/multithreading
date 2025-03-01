@@ -42,7 +42,7 @@ final class _Node<T> {
 
 //
 
-extension<T> on _Queue<T> {
+extension _QueuePrivateAPI<T> on _Queue<T> {
   void _enqueue(T value) {
     final newNode = _Node(value: value);
     if (_front == null) {
