@@ -44,10 +44,10 @@ final class _Worker implements Worker, Mortal<Worker> {
   late final StreamSubscription<_Output<Any>> _subscription;
 
   @override
-  Future<T> perform<T>(Task<T> task) => _perform(task);
+  Worker get self => this;
 
   @override
-  Worker get self => this;
+  Future<T> perform<T>(Task<T> task) => _perform(task);
 
   @override
   Future<void> die() => _die();
