@@ -103,8 +103,10 @@ typedef _InitialMessage = (SendPort, Capacity);
 extension _WorkerUnsafeAPI on Worker {
   @neverInline
   static Future<Worker> spawn({
-    WorkerRules rules = const WorkerRules(),
+    required WorkerRules rules,
   }) async {
+    // TODO(rshirkhanov): assert availableWorkersCount
+
     final receivePort = ReceivePort();
     final received = receivePort.asBroadcastStream();
 
@@ -184,7 +186,7 @@ typedef WorkerScope<R> = Future<R> Function(WorkerPerform perform);
 extension _WorkerSafeAPI on Worker {
   static Future<R> scoped<R>(
     WorkerScope<R> scope, {
-    WorkerRules rules = const WorkerRules(),
+    required WorkerRules rules,
   }) async {
     final worker = await Worker.spawn(rules: rules);
 

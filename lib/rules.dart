@@ -4,6 +4,7 @@ part of 'multithreading.dart';
 
 //
 
+// TODO(rshirkhanov): make it an encapsulated variable
 final _availableWorkersCount = Platform.numberOfProcessors - 1;
 
 //
@@ -72,26 +73,16 @@ final class Capacity {
 
 //
 
-final class DispatcherRules {
-  const DispatcherRules({
-    required this.initialization,
-    this.debugName,
-  });
-
-  final Initialization initialization;
-  final String? debugName;
-}
+typedef DispatcherRules = ({
+  Initialization initialization,
+  String? debugName,
+});
 
 //
 
-final class WorkerRules {
-  const WorkerRules({
-    this.capacity = Capacity.unlimited,
-    this.debugName,
-  });
-
-  final Capacity capacity;
-  final String? debugName;
-}
+typedef WorkerRules = ({
+  Capacity capacity,
+  String? debugName,
+});
 
 //
