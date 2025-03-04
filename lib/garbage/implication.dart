@@ -8,16 +8,11 @@ sealed class Premise<T> {
   const Premise();
 
   const factory Premise.truth(T value) = _Truth;
+  static const Premise<Never> falsehood = _Falsehood();
 
-  static const falsehood = _Falsehood();
-
-  static const of = _of;
+  static Premise<T> of<T>(T value, Predicate<T> predicate) =>
+      predicate(value) ? Premise.truth(value) : Premise.falsehood;
 }
-
-//
-
-Premise<T> _of<T>(T value, Predicate<T> predicate) =>
-    predicate(value) ? Premise.truth(value) : Premise.falsehood;
 
 //
 

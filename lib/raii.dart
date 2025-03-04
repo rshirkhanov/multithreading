@@ -21,10 +21,10 @@ typedef Scope<T, R> = FutureOr<R> Function(T it);
 
 //
 
-abstract interface class RAII<A, T> {
+sealed class RAII<A, T> {
   const RAII();
 
-  const factory RAII.of(Ctor<A, T> ctor) = _RAII.new;
+  const factory RAII.of(Ctor<A, T> ctor) = _RAII;
 
   Future<R> scoped<R>(A args, Scope<T, R> scope);
 }

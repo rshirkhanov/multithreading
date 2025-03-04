@@ -5,8 +5,8 @@ part of 'multithreading.dart';
 //
 
 @unsendable
-abstract interface class Worker {
-  const Worker._();
+sealed class Worker {
+  const Worker();
 
   static const spawn = _WorkerUnsafeAPI.spawn;
 
@@ -21,7 +21,6 @@ typedef _Output<T> = ({Id id, Result<T, Object> result});
 
 //
 
-@unsendable
 final class _Worker implements Worker, Mortal<Worker> {
   _Worker(
     this._receivePort,

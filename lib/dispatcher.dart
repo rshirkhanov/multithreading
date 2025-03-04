@@ -5,20 +5,22 @@ part of 'multithreading.dart';
 //
 
 @unsendable
-abstract interface class Dispatcher {
-  const Dispatcher._();
+sealed class Dispatcher {
+  const Dispatcher();
 
   static const spawn = _DispatcherUnsafeAPI.spawn;
 
   Future<T> dispatch<T>(Task<T> task);
-  Future<void> die();
 }
 
 //
 
 // TODO(rshirkhanov): implement
-final class _Dispatcher implements Dispatcher {
+final class _Dispatcher implements Dispatcher, Mortal<Dispatcher> {
   _Dispatcher();
+
+  @override
+  Dispatcher get self => this;
 
   @override
   Future<T> dispatch<T>(Task<T> task) => _dispatch(task);
@@ -45,9 +47,7 @@ extension _DispatcherUnsafeAPI on Dispatcher {
   static const maxWorkerCountGTAvailableWorkersCount =
       '"maxWorkerCount" must be less than or equal to "_availableWorkersCount"';
 
-  static Future<Dispatcher> spawn({
-    required DispatcherRules rules,
-  }) {
+  static Future<Mortal<Dispatcher>> spawn(DispatcherRules rules) {
     assert(
       rules.initialization.maxWorkerCount <= _availableWorkersCount,
       maxWorkerCountGTAvailableWorkersCount,
