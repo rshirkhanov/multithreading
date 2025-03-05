@@ -62,7 +62,7 @@ extension<T extends num> on Iterable<T> {
 Future<void> main() async {
   print('BEGIN');
 
-  const defaultRules = (capacity: Capacity.unlimited, debugName: null);
+  const defaultRules = (capacity: Capacity.exact(1), debugName: null);
   final workers = await duplicate(() => Worker.spawn(defaultRules)).wait;
 
   try {

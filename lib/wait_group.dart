@@ -17,6 +17,10 @@ final class WaitGroup {
 //
 
 extension WaitGroupPublicAPI on WaitGroup {
+  int get pending => _pending;
+
+  //
+
   bool get isEmpty => !isNotEmpty;
   bool get isNotEmpty => _pending > 0 && _completer != null;
 

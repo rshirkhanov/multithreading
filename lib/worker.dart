@@ -30,11 +30,11 @@ final class _Worker implements Worker, Mortal<Worker> {
     this._sendPort,
     this._pending,
   ) {
-    _subscription = _received.whereType<_Output<Any>>().listen(_onReceived);
+    _subscription = _received.listen(_onReceived);
   }
 
   final ReceivePort _receivePort;
-  final Stream<Any> _received;
+  final Stream<_Output<Any>> _received;
   final ReceivePort _exitPort;
   final Isolate _isolate;
   final SendPort _sendPort;
@@ -124,7 +124,7 @@ extension _WorkerUnsafeAPI on Worker {
 
     return _Worker(
       receivePort,
-      received,
+      received.whereType<_Output<Any>>(),
       exitPort,
       isolate,
       sendPort,
