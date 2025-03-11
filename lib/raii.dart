@@ -4,10 +4,13 @@ part of 'multithreading.dart';
 
 //
 
+// TODO(rshirkhanov): T extends Object
 abstract interface class Mortal<T> {
   const Mortal();
 
+  // TODO(rshirkhanov): () -> T?
   T get self;
+
   Future<void> die();
 }
 
