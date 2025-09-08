@@ -9,6 +9,7 @@ sealed class Worker {
   const Worker();
 
   static const spawn = _WorkerUnsafeAPI.spawn;
+  static const resource = RAII.of(spawn);
 
   Future<T> perform<T>(Task<T> task);
 }
@@ -96,10 +97,6 @@ extension _WorkerPrivateAPI on _Worker {
 
 //
 
-typedef _InitialMessage = (SendPort, Capacity);
-
-//
-
 extension _WorkerUnsafeAPI on Worker {
   @neverInline
   static Future<Mortal<Worker>> spawn(WorkerRules rules) async {
@@ -110,11 +107,9 @@ extension _WorkerUnsafeAPI on Worker {
 
     final exitPort = ReceivePort();
 
-    final initialMessage = (receivePort.sendPort, rules.capacity);
-
-    final isolate = await Isolate.spawn<_InitialMessage>(
+    final isolate = await Isolate.spawn(
       _entryPoint,
-      initialMessage,
+      receivePort.sendPort,
       debugName: rules.debugName,
       onExit: exitPort.sendPort,
     );
@@ -135,28 +130,15 @@ extension _WorkerUnsafeAPI on Worker {
   //
 
   @neverInline
-  static Future<void> _entryPoint(_InitialMessage initialMessage) async {
-    final (sendPort, capacity) = initialMessage;
-
+  static Future<void> _entryPoint(SendPort sendPort) async {
     final receivePort = ReceivePort();
-    final _ = sendPort.send(receivePort.sendPort);
+    sendPort.send(receivePort.sendPort);
 
-    final wg = WaitGroup();
-
-    await for (final (index, value) in receivePort.enumerated) {
-      if (value case final _Input<Any> input) {
-        wg.add();
-        unawaited(_handle(input).then(sendPort.send).whenComplete(wg.done));
-
-        if ((index + 1) % capacity.value == 0) {
-          await wg.wait();
-        }
+    await for (final message in receivePort) {
+      if (message case final _Input<Any> input) {
+        unawaited(_handle(input).then(sendPort.send));
       } else {
-        if (wg.isNotEmpty) {
-          await wg.wait();
-        }
-
-        final _ = receivePort.close();
+        receivePort.close();
         Isolate.exit();
       }
     }
